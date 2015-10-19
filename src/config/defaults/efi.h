@@ -10,11 +10,9 @@
 FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
 
 #define UACCESS_EFI
-#define IOAPI_X86
 #define PCIAPI_EFI
 #define CONSOLE_EFI
 #define TIMER_EFI
-#define NAP_EFIX86
 #define UMALLOC_EFI
 #define SMBIOS_EFI
 #define SANBOOT_NULL
@@ -27,6 +25,16 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL );
 #define	IMAGE_SCRIPT		/* iPXE script image support */
 
 #define	REBOOT_CMD		/* Reboot command */
+
+#if defined ( __i386__ ) || defined ( __x86_64__ )
+#define IOAPI_X86
+#define NAP_EFIX86
 #define	CPUID_CMD		/* x86 CPU feature detection command */
+#endif
+
+#if defined ( __arm__ )
+#define IOAPI_ARM
+#define NAP_EFIARM
+#endif
 
 #endif /* CONFIG_DEFAULTS_EFI_H */
