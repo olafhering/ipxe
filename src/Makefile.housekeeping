@@ -1240,7 +1240,9 @@ BUILD_ID_CMD = cat $^ | cksum | awk '{print $$1}'
 ifdef SOURCE_DATE_EPOCH
 BUILD_TIMESTAMP := $(SOURCE_DATE_EPOCH)
 else
-BUILD_TIMESTAMP := $(shell date +%s)
+# NB: In the case of the SUSE package we want reproducible builds,
+# so we use a pre-determined timestamp, rather than the current timestamp
+BUILD_TIMESTAMP := 0xdeadcafe
 endif
 
 # Build version
