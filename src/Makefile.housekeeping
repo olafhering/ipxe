@@ -1233,7 +1233,9 @@ BUILD_TIMESTAMP := $(SOURCE_DATE_EPOCH)
 else ifdef GITVERSION
 BUILD_TIMESTAMP := $(shell git log -1 --pretty=%ct)
 else
-BUILD_TIMESTAMP := $(shell date +%s)
+# NB: In the case of the SUSE package we want reproducible builds,
+# so we use a pre-determined timestamp, rather than the current timestamp
+BUILD_TIMESTAMP := 0xdeadcafe
 endif
 
 # Build version
