@@ -489,6 +489,7 @@ static void process_reloc ( bfd *bfd __attribute__ (( unused )),
 		/* Generate a 2-byte PE relocation */
 		generate_pe_reloc ( pe_reltab, offset, 2 );
 	} else if ( ( strcmp ( howto->name, "R_386_PC32" ) == 0 ) ||
+		    ( strcmp ( howto->name, "R_X86_64_PLT32" ) == 0 ) ||
 		    ( strcmp ( howto->name, "R_X86_64_PC32" ) == 0 ) ) {
 		/* Skip PC-relative relocations; all relative offsets
 		 * remain unaltered when the object is loaded.
