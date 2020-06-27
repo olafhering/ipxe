@@ -78,6 +78,12 @@ struct intelvf_msg_mtu {
 	uint32_t mtu;
 } __attribute__ (( packed ));
 
+/** Raw mailbox message */
+struct intelvf_msg_raw {
+	/** Raw dwords */
+	uint32_t dword[0];
+} __attribute__ (( packed ));
+
 /** Mailbox message */
 union intelvf_msg {
 	/** Message header */
@@ -89,7 +95,7 @@ union intelvf_msg {
 	/** MTU message */
 	struct intelvf_msg_mtu mtu;
 	/** Raw dwords */
-	uint32_t dword[0];
+	struct intelvf_msg_raw raw;
 };
 
 /** Maximum time to wait for mailbox message
