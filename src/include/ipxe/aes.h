@@ -50,6 +50,13 @@ extern struct cipher_algorithm aes_ecb_algorithm;
 extern struct cipher_algorithm aes_cbc_algorithm;
 extern struct cipher_algorithm aes_gcm_algorithm;
 
+/* Allow for architecture-specific hardware acceleration */
+#include <bits/aes.h>
+
+void aes_accelerate ( void );
+extern void aes_decelerate ( void );
+extern int aes_is_accelerated ( void );
+
 int aes_wrap ( const void *kek, const void *src, void *dest, int nblk );
 int aes_unwrap ( const void *kek, const void *src, void *dest, int nblk );
 
