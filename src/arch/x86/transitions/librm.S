@@ -206,11 +206,9 @@ pm_esp:	.long VIRTUAL(_estack)
 	.struct	0
 VC_TMP_GDTR_IDTR:	.space	12 /* must match rm_default_gdtr_idtr layout */
 VC_TMP_PAD:		.space	4 /* for alignment */
-.if64
 VC_TMP_CR3:		.space	4
 VC_TMP_CR4:		.space	4
 VC_TMP_EMER:		.space	8
-.endif
 VC_TMP_FXSAVE:		.space	512
 VC_TMP_END:
 	.previous
@@ -1017,21 +1015,21 @@ virt_call:
 	cli
 	movw	%cs:rm_ds, %ds
 
-	/* Preserve FPU, MMX and SSE state in temporary static buffer */
+	/* Preserve FPU/MMX/SSE state and CR4 in temporary static buffer */
 .if32 ; testb	$0xff, fxsr_supported ; jz 1f ; .endif
 	fxsave	( rm_tmpbuf + VC_TMP_FXSAVE )
+	movl	%cr4, %eax
+	movl	%eax, ( rm_tmpbuf + VC_TMP_CR4 )
 1:
 	/* Preserve GDTR and IDTR in temporary static buffer */
 	sidt	( rm_tmpbuf + VC_TMP_GDTR_IDTR + 6 )
 	sgdt	( rm_tmpbuf + VC_TMP_GDTR_IDTR + 0 )
 
-.if64 ;	/* Preserve control registers, if applicable */
+.if64 ;	/* Preserve control registers used for long mode, if applicable */
 	movl	$MSR_EFER, %ecx
 	rdmsr
 	movl	%eax, ( rm_tmpbuf + VC_TMP_EMER + 0 )
 	movl	%edx, ( rm_tmpbuf + VC_TMP_EMER + 4 )
-	movl	%cr4, %eax
-	movl	%eax, ( rm_tmpbuf + VC_TMP_CR4 )
 	movl	%cr3, %eax
 	movl	%eax, ( rm_tmpbuf + VC_TMP_CR3 )
 .endif
@@ -1075,20 +1073,20 @@ vc_lmode:
 	.section ".text16.virt_call", "ax", @progbits
 	.code16
 vc_rmode:
-.if64 ;	/* Restore control registers, if applicable */
+.if64 ;	/* Restore control registers used for long mode, if applicable */
 	movw	%sp, %bp
 	movl	( rm_tmpbuf + VC_TMP_CR3 ), %eax
 	movl	%eax, %cr3
-	movl	( rm_tmpbuf + VC_TMP_CR4 ), %eax
-	movl	%eax, %cr4
 	movl	( rm_tmpbuf + VC_TMP_EMER + 0 ), %eax
 	movl	( rm_tmpbuf + VC_TMP_EMER + 4 ), %edx
 	movl	$MSR_EFER, %ecx
 	wrmsr
 .endif
 
-	/* Restore FPU, MMX and SSE state from temporary static buffer */
+	/* Restore FPU/MMX/SSE state and CR4 from temporary static buffer */
 .if32 ; testb	$0xff, fxsr_supported ; jz 1f ; .endif
+	movl	( rm_tmpbuf + VC_TMP_CR4 ), %eax
+	movl	%eax, %cr4
 	fxrstor	( rm_tmpbuf + VC_TMP_FXSAVE )
 1:
 	/* Restore registers and flags and return */
