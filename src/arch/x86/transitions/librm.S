@@ -349,12 +349,10 @@ init_librm_rmode:
 	/* Initialise IDT */
 	virtcall init_idt
 
-#ifdef TIVOLI_VMM_WORKAROUND
 	/* Check for FXSAVE/FXRSTOR */
 	clc
 	virtcall check_fxsr
 	setnc	fxsr_supported
-#endif
 
 	/* Restore registers */
 	popl	%edi
