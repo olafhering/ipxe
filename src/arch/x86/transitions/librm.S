@@ -205,10 +205,11 @@ pm_esp:	.long VIRTUAL(_estack)
 	/* Temporary static buffer usage by virt_call */
 	.struct	0
 VC_TMP_GDTR_IDTR:	.space	12 /* must match rm_default_gdtr_idtr layout */
-VC_TMP_PAD:		.space	4 /* for alignment */
+VC_TMP_CR0:		.space	4
 VC_TMP_CR3:		.space	4
 VC_TMP_CR4:		.space	4
 VC_TMP_EMER:		.space	8
+	.balign 16
 VC_TMP_FXSAVE:		.space	512
 VC_TMP_END:
 	.previous
@@ -1021,6 +1022,10 @@ virt_call:
 	movl	%cr4, %eax
 	movl	%eax, ( rm_tmpbuf + VC_TMP_CR4 )
 1:
+	/* Preserve CR0 in temporary static buffer */
+	movl	%cr0, %eax
+	movl	%eax, ( rm_tmpbuf + VC_TMP_CR0 )
+
 	/* Preserve GDTR and IDTR in temporary static buffer */
 	sidt	( rm_tmpbuf + VC_TMP_GDTR_IDTR + 6 )
 	sgdt	( rm_tmpbuf + VC_TMP_GDTR_IDTR + 0 )
@@ -1082,6 +1087,9 @@ vc_rmode:
 	movl	$MSR_EFER, %ecx
 	wrmsr
 .endif
+	/* Restore CR0 from temporary static buffer */
+	movl	( rm_tmpbuf + VC_TMP_CR0 ), %eax
+	movl	%eax, %cr0
 
 	/* Restore FPU/MMX/SSE state and CR4 from temporary static buffer */
 .if32 ; testb	$0xff, fxsr_supported ; jz 1f ; .endif
