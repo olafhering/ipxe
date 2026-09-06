@@ -439,10 +439,10 @@ real_to_prot:
 	movw	%ax, %gs
 	movw	%ax, %ss
 
-	/* Switch to protected mode (with paging disabled if applicable) */
+	/* Switch to protected mode with paging disabled */
 	cli
 	movl	%cr0, %eax
-.if64 ;	andl	$~CR0_PG, %eax ; .endif
+	andl	$~CR0_PG, %eax
 	orb	$CR0_PE, %al
 	movl	%eax, %cr0
 	data32 ljmp	$VIRTUAL_CS, $VIRTUAL(r2p_pmode)
