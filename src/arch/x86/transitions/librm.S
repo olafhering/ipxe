@@ -349,11 +349,11 @@ init_librm_rmode:
 	/* Initialise IDT */
 	virtcall init_idt
 
-	/* Check for FXSAVE/FXRSTOR */
+.if32 ; /* Check for FXSAVE/FXRSTOR (always supported by 64-bit CPUs) */
 	clc
 	virtcall check_fxsr
 	setnc	fxsr_supported
-
+.endif
 	/* Restore registers */
 	popl	%edi
 	popl	%ebx
@@ -370,9 +370,11 @@ set_seg_base:
 	roll	$16, %eax
 	ret
 
+.if32	/* FXSAVE/FXRSTOR instructions supported flag */
 	.section ".data16.fxsr_supported", "awx", @progbits
-fxsr_supported:		/* FXSAVE/FXRSTOR instructions supported */
+fxsr_supported:
 	.byte	0
+.endif
 
 /****************************************************************************
  * real_to_prot (real-mode near call, 32-bit virtual return address)
@@ -1016,8 +1018,7 @@ virt_call:
 	movw	%cs:rm_ds, %ds
 
 	/* Preserve FPU, MMX and SSE state in temporary static buffer */
-	testb	$0xff, fxsr_supported
-	jz	1f
+.if32 ; testb	$0xff, fxsr_supported ; jz 1f ; .endif
 	fxsave	( rm_tmpbuf + VC_TMP_FXSAVE )
 1:
 	/* Preserve GDTR and IDTR in temporary static buffer */
@@ -1087,8 +1088,7 @@ vc_rmode:
 .endif
 
 	/* Restore FPU, MMX and SSE state from temporary static buffer */
-	testb	$0xff, fxsr_supported
-	jz	1f
+.if32 ; testb	$0xff, fxsr_supported ; jz 1f ; .endif
 	fxrstor	( rm_tmpbuf + VC_TMP_FXSAVE )
 1:
 	/* Restore registers and flags and return */
