@@ -16,11 +16,20 @@ FILE_LICENCE ( GPL2_OR_LATER_OR_UBDL )
 /* CR0: protection enabled */
 #define CR0_PE ( 1 << 0 )
 
+/* CR0: FPU emulation enabled */
+#define CR0_EM ( 1 << 2 )
+
+/* CR0: task switched */
+#define CR0_TS ( 1 << 3 )
+
 /* CR0: paging */
 #define CR0_PG ( 1 << 31 )
 
 /* CR4: physical address extensions */
 #define CR4_PAE ( 1 << 5 )
+
+/* CR4: OS support for FXSAVE/FXRSTOR across transitions */
+#define CR4_OSFXSR ( 1 << 9 )
 
 /* Extended feature enable MSR (EFER) */
 #define MSR_EFER 0xc0000080
@@ -426,6 +435,37 @@ real_to_prot:
 	/* Load protected-mode global descriptor table */
 	data32 lgdt gdtr
 
+	/* Enable SSE instruction execution, if supported.
+	 *
+	 * Note that we have to assert CR4.OSFXSR to allow these
+	 * instructions to execute, but our context switching logic
+	 * (e.g. the protected-mode and long-mode interrupt handlers)
+	 * does not actually preserve the FPU/MMX/SSE registers.
+	 *
+	 * Our C code therefore cannot in general presume that the
+	 * FPU/MMX/SSE registers will be preserved across arbitrary
+	 * context boundaries.  However, since C code executes with
+	 * interrupts disabled, an individual function may safely use
+	 * temporary FPU/MMX/SSE registers provided that it does not
+	 * enable interrupts or otherwise relinquish the context.
+	 *
+	 * For the same C code to also be usable under the UEFI IA-32
+	 * ABI, it must preserve all registers other than %eax, %ecx,
+	 * and %edx, including preserving all MMX and XMM registers.
+	 *
+	 * The practical upshot is therefore that C code may use SSE
+	 * instructions and may assume that SSE registers will not be
+	 * changed arbitrarily during execution (either because the
+	 * ABI guarantees preservation, as with UEFI or Linux, or
+	 * because the runtime environment guarantees that interrupts
+	 * are disabled), but the C code must itself restore the
+	 * values of any modified FPU/MMX/SSE registers.
+	 */
+.if32 ; testb	$0xff, fxsr_supported ; jz 1f ; .endif
+	movl	%cr4, %eax
+	orw	$CR4_OSFXSR, %ax
+	movl	%eax, %cr4
+1:
 	/* Zero segment registers.  This wastes around 12 cycles on
 	 * real hardware, but saves a substantial number of emulated
 	 * instructions under KVM.
@@ -440,7 +480,7 @@ real_to_prot:
 	/* Switch to protected mode with paging disabled */
 	cli
 	movl	%cr0, %eax
-	andl	$~CR0_PG, %eax
+	andl	$~( CR0_PG | CR0_TS | CR0_EM ), %eax
 	orb	$CR0_PE, %al
 	movl	%eax, %cr0
 	data32 ljmp	$VIRTUAL_CS, $VIRTUAL(r2p_pmode)
