@@ -204,8 +204,7 @@ pm_esp:	.long VIRTUAL(_estack)
  */
 	/* Temporary static buffer usage by virt_call */
 	.struct	0
-VC_TMP_GDT:		.space	6
-VC_TMP_IDT:		.space	6
+VC_TMP_GDTR_IDTR:	.space	12 /* must match rm_default_gdtr_idtr layout */
 VC_TMP_PAD:		.space	4 /* for alignment */
 .if64
 VC_TMP_CR3:		.space	4
@@ -1023,9 +1022,9 @@ virt_call:
 	jz	1f
 	fxsave	( rm_tmpbuf + VC_TMP_FXSAVE )
 1:
-	/* Preserve GDT and IDT in temporary static buffer */
-	sidt	( rm_tmpbuf + VC_TMP_IDT )
-	sgdt	( rm_tmpbuf + VC_TMP_GDT )
+	/* Preserve GDTR and IDTR in temporary static buffer */
+	sidt	( rm_tmpbuf + VC_TMP_GDTR_IDTR + 6 )
+	sgdt	( rm_tmpbuf + VC_TMP_GDTR_IDTR + 0 )
 
 .if64 ;	/* Preserve control registers, if applicable */
 	movl	$MSR_EFER, %ecx
@@ -1071,7 +1070,7 @@ vc_lmode:
 	/* Switch to real mode and move register dump back to RM stack */
 	movl	$VC_OFFSET_END, %ecx
 	movl	$VC_TMP_END, %edx
-	leal	VC_TMP_GDT(%esp, %ecx), %esi
+	leal	VC_TMP_GDTR_IDTR(%esp, %ecx), %esi
 	pushl	$vc_rmode
 	jmp	prot_to_real
 	.section ".text16.virt_call", "ax", @progbits
